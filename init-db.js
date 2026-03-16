@@ -2,6 +2,9 @@ const db = require('./db');
 
 async function init() {
   try {
+    // Drop existing table to ensure schema matches the new Viral Clone & Twist requirements
+    await db.query(`DROP TABLE IF EXISTS trending_videos`);
+    
     await db.query(`
       CREATE TABLE IF NOT EXISTS trending_videos (
         id SERIAL PRIMARY KEY,
@@ -17,7 +20,7 @@ async function init() {
         scraped_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
-    console.log('Database initialized successfully.');
+    console.log('Database initialized successfully with new schema.');
     process.exit(0);
   } catch (err) {
     // On Render, the DB might take a second to be ready
