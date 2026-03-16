@@ -1,20 +1,15 @@
 # COPY // DARK CYBERPUNK AI OPS DASHBOARD
 
-## Setup
-1. **Database**: 
-   - Ensure PostgreSQL is running.
-   - Create a database named `copy_db`.
-   - Update the `.env` file with your actual `DB_USER` and `DB_PASSWORD`.
+## Deployment (Render.com)
+This project is configured for **Render Web Services** (not Static Sites, as it requires a Node.js backend and Database).
 
-2. **Initialize Database**:
-   ```bash
-   node init-db.js
-   ```
+1. **Blueprints**: Connect your GitHub repo to Render and it will automatically detect the `render.yaml` file to set up both the Web Service and PostgreSQL database.
+2. **Manual Setup**:
+   - Create a **Web Service**.
+   - Use `Build Command`: `./render-build.sh`
+   - Use `Start Command`: `npm start`
+   - Add Environment Variable `DATABASE_URL` from your Render PostgreSQL instance.
 
-3. **Start Dashboard**:
-   ```bash
-   node server.js
-   ```
 
 ## Features
 - **Puppeteer Scraper**: Navigates YouTube Trending, extracts titles and view counts.
