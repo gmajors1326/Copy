@@ -43,9 +43,13 @@
                 <span class="mr-3 text-pink-500">⌆</span> AUTO_PILOT
             </div>
         </nav>
-        <div class="border-t border-gray-900 pt-6">
+        <div class="border-t border-gray-900 pt-6 space-y-4">
+            <div>
+                <label class="text-[9px] text-gray-600 tracking-widest block mb-2 font-bold">NICHE_TARGET</label>
+                <input type="text" id="nicheInput" value="AI Operations" class="w-full bg-black border border-gray-800 p-2 text-[10px] text-emerald-500 focus:border-pink-600 focus:outline-none transition-colors">
+            </div>
             <button onclick="runScraper()" id="scrapeBtn" class="w-full border border-pink-600 text-pink-600 py-2 text-xs font-bold hover:bg-pink-600 hover:text-black transition-all">
-                INITIATE_SCRAPE()
+                HUNT_VIRAL()
             </button>
         </div>
     </aside>
@@ -182,13 +186,18 @@
 
         async function runScraper() {
             const btn = document.getElementById('scrapeBtn');
+            const niche = document.getElementById('nicheInput').value;
             btn.disabled = true;
-            btn.innerText = 'SCRAPING...';
+            btn.innerText = 'HUNTING...';
             try {
-                await fetch('/api/scrape', { method: 'POST' });
+                await fetch('/api/scrape', { 
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ niche })
+                });
             } finally {
                 btn.disabled = false;
-                btn.innerText = 'INITIATE_SCRAPE()';
+                btn.innerText = 'HUNT_VIRAL()';
             }
         }
 

@@ -26,9 +26,10 @@ app.get('/api/videos', async (req, res) => {
 // API to trigger scraper
 app.post('/api/scrape', async (req, res) => {
   try {
-    io.emit('log', { message: 'SYSTEM: Initializing Puppeteer cluster...', type: 'info' });
-    const videos = await scrapeTrending();
-    io.emit('log', { message: `SUCCESS: ${videos.length} data points synchronized.`, type: 'success' });
+    const { niche } = req.body;
+    io.emit('log', { message: `SYSTEM: Target identified [${niche || 'Trending'}]...`, type: 'info' });
+    const videos = await scrapeTrending(niche);
+    io.emit('log', { message: `SUCCESS: ${videos.length} viral clones found for [${niche}].`, type: 'success' });
     io.emit('data-update');
     res.json({ message: 'Scrape successful', count: videos.length });
   } catch (err) {
