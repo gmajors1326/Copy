@@ -11,8 +11,17 @@ async function scrapeTrending() {
   const page = await browser.newPage();
   
   try {
+    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36');
+    await page.setViewport({ width: 1280, height: 800 });
+    
     console.log('Navigating to YouTube Trending...');
-    await page.goto('https://www.youtube.com/feed/trending', { waitUntil: 'networkidle2' });
+    await page.goto('https://www.youtube.com/feed/trending', { 
+      waitUntil: 'domcontentloaded', 
+      timeout: 60000 
+    });
+
+    // Wait for the specific video container to ensure content is there
+    await page.waitForSelector('ytd-video-renderer', { timeout: 30000 });
 
     const videos = await page.evaluate(() => {
       const videoElements = document.querySelectorAll('ytd-video-renderer');
