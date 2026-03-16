@@ -13,8 +13,8 @@ async function init() {
         thumbnail_url TEXT,
         video_url TEXT,
         views TEXT,
-        view_count INTEGER,
-        velocity INTEGER DEFAULT 0,
+        view_count BIGINT,
+        velocity BIGINT DEFAULT 0,
         category TEXT DEFAULT 'Market Pulse',
         twist_score INTEGER DEFAULT 0,
         scraped_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
