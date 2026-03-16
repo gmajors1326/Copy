@@ -15,26 +15,54 @@ async function scrapeTrending() {
     await page.setViewport({ width: 1280, height: 800 });
     
     console.log('Navigating to YouTube Trending...');
-    await page.goto('https://www.youtube.com/feed/trending', { 
+    // Use mobile version which is lighter and often easier to scrape
+    await page.goto('https://m.youtube.com/feed/trending', { 
       waitUntil: 'domcontentloaded', 
       timeout: 60000 
     });
 
-    // Wait for the specific video container to ensure content is there
-    await page.waitForSelector('ytd-video-renderer', { timeout: 30000 });
+    console.log('Checking for consent/cookie screen...');
+    try {
+      // Check for common consent buttons and click them if they appear
+      const consentButtons = await page.$$('button[aria-label*="Accept"], button[aria-label*="Agree"], .VfPpkd-LgbsSe');
+      if (consentButtons.length > 0) {
+        console.log('Accepting cookies...');
+        await consentButtons[0].click();
+        await new Promise(r => setTimeout(r, 2000));
+      }
+    } catch (e) {
+      console.log('No consent screen found or failed to click.');
+    }
+
+    console.log('Waiting for video elements...');
+    // Mobile selector is different: ytm-video-with-context-renderer
+    await page.waitForSelector('ytm-video-with-context-renderer, ytd-video-renderer', { timeout: 30000 });
 
     const videos = await page.evaluate(() => {
-      const videoElements = document.querySelectorAll('ytd-video-renderer');
+      // Try both desktop and mobile selectors
+      let videoElements = document.querySelectorAll('ytm-video-with-context-renderer');
+      if (videoElements.length === 0) {
+        videoElements = document.querySelectorAll('ytd-video-renderer');
+      }
+
       return Array.from(videoElements).slice(0, 12).map(v => {
-        const title = v.querySelector('#video-title').innerText;
-        const videoUrl = v.querySelector('#video-title').href;
-        const channelName = v.querySelector('#channel-info').innerText.split('\n')[0];
-        const thumbnailUrl = v.querySelector('img').src;
-        const metadata = v.querySelector('#metadata-line').innerText.split('\n');
-        const viewsStr = metadata[0] || '0 views';
+        const titleEl = v.querySelector('h3, #video-title');
+        const title = titleEl ? titleEl.innerText : 'Unknown Title';
         
-        // Parse views to integer for velocity calculation
-        const viewCount = parseInt(viewsStr.replace(/[^0-9]/g, '')) * (viewsStr.includes('K') ? 1000 : viewsStr.includes('M') ? 1000000 : 1);
+        const linkEl = v.querySelector('a');
+        const videoUrl = linkEl ? linkEl.href : '#';
+        
+        const channelEl = v.querySelector('.ytm-badge-and-byline-item, #channel-info');
+        const channelName = channelEl ? channelEl.innerText.split('•')[0].trim() : 'Unknown Channel';
+        
+        const imgEl = v.querySelector('img');
+        const thumbnailUrl = imgEl ? imgEl.src : '';
+        
+        const metadataEl = v.querySelector('.ytm-badge-and-byline-item-byline, #metadata-line');
+        const viewsStr = metadataEl ? metadataEl.innerText : '0 views';
+        
+        // Parse views
+        const viewCount = parseInt(viewsStr.replace(/[^0-9]/g, '')) * (viewsStr.includes('K') ? 1000 : viewsStr.includes('M') ? 1000000 : 1) || 0;
         
         return { title, videoUrl, channelName, thumbnailUrl, views: viewsStr, viewCount };
       });
