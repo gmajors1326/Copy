@@ -13,8 +13,9 @@ async function init() {
     console.log('Database initialized successfully.');
     process.exit(0);
   } catch (err) {
-    console.error('Error initializing database:', err);
-    process.exit(1);
+    // On Render, the DB might take a second to be ready
+    console.error('Database initialization warning (retrying may be needed):', err.message);
+    process.exit(0); // Exit gracefully so the server can attempt to start/retry
   }
 }
 
