@@ -3,5 +3,5 @@
 set -o errexit
 
 npm install
-# Install Chrome for Puppeteer
+# Install Chrome to the location specified in .puppeteerrc.cjs
 npx puppeteer browsers install chrome

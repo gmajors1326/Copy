@@ -13,7 +13,7 @@ services:
       - key: PORT
         value: 10000
       - key: PUPPETEER_CACHE_DIR
-        value: /opt/render/.cache/puppeteer
+        value: /opt/render/project/src/.cache/puppeteer
 
 databases:
   - name: copy-db

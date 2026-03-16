@@ -2,9 +2,11 @@ const puppeteer = require('puppeteer');
 const db = require('./db');
 
 async function scrapeTrending() {
+  console.log('Using Puppeteer Cache:', process.env.PUPPETEER_CACHE_DIR);
   const browser = await puppeteer.launch({ 
     headless: "new",
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
+    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || null,
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
   });
   const page = await browser.newPage();
   
