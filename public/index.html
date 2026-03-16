@@ -3,116 +3,180 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>COPY // AI OPS</title>
+    <title>COPY // AI OPS DASHBOARD</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/socket.io/socket.io.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=JetBrains+Mono:wght@300;500&display=swap" rel="stylesheet">
     <style>
-        body {
-            background-color: #050505;
-            color: #00ff9f;
-            font-family: 'JetBrains+Mono', monospace;
-            overflow-x: hidden;
-        }
-        h1, h2, .brand {
-            font-family: 'Orbitron', sans-serif;
-            text-transform: uppercase;
-            letter-spacing: 4px;
-        }
-        .neon-border {
-            border: 1px solid #00ff9f;
-            box-shadow: 0 0 10px rgba(0, 255, 159, 0.3), inset 0 0 5px rgba(0, 255, 159, 0.2);
-        }
-        .neon-text {
-            text-shadow: 0 0 10px rgba(0, 255, 159, 0.5);
-        }
-        .bg-cyber {
-            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
-            border-left: 4px solid #ff0055;
-        }
-        .btn-action {
-            background: transparent;
-            border: 1px solid #ff0055;
-            color: #ff0055;
-            transition: all 0.3s;
-        }
-        .btn-action:hover {
-            background: #ff0055;
-            color: #000;
-            box-shadow: 0 0 20px #ff0055;
-        }
+        body { background: #020202; color: #00ff9f; font-family: 'JetBrains+Mono', monospace; }
+        .cyber-panel { background: rgba(10, 10, 10, 0.9); border: 1px solid #1a1a1a; position: relative; overflow: hidden; }
+        .cyber-panel::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: linear-gradient(90deg, transparent, #ff0055, transparent); animation: scan 3s linear infinite; }
+        @keyframes scan { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+        .sidebar-item { transition: all 0.3s; border-left: 2px solid transparent; cursor: pointer; }
+        .sidebar-item:hover, .sidebar-item.active { background: rgba(255, 0, 85, 0.1); border-left: 2px solid #ff0055; color: #fff; }
+        .velocity-fire { filter: drop-shadow(0 0 5px #ff8800); }
+        .twist-meter { height: 4px; background: #1a1a1a; width: 100%; position: relative; }
+        .twist-fill { height: 100%; background: #00ff9f; box-shadow: 0 0 10px #00ff9f; }
         .scroll-custom::-webkit-scrollbar { width: 4px; }
-        .scroll-custom::-webkit-scrollbar-track { background: #0a0a0a; }
         .scroll-custom::-webkit-scrollbar-thumb { background: #ff0055; }
+        .modal { display: none; background: rgba(0,0,0,0.9); backdrop-filter: blur(10px); }
     </style>
 </head>
-<body class="p-8">
-    <div class="max-w-6xl mx-auto">
-        <header class="flex justify-between items-center mb-12 border-b border-gray-800 pb-6">
-            <div>
-                <h1 class="text-4xl font-bold neon-text">COPY <span class="text-xs align-top text-pink-600">v1.0</span></h1>
-                <p class="text-gray-500 text-sm mt-2 uppercase tracking-widest">Neural Link Established // AI Operations Dashboard</p>
+<body class="flex h-screen overflow-hidden">
+    <!-- Sidebar -->
+    <aside class="w-64 border-r border-gray-900 flex flex-col p-6 space-y-8 bg-black">
+        <div class="mb-4">
+            <h1 class="text-2xl font-bold font-['Orbitron'] tracking-tighter text-white">COPY <span class="text-[10px] text-pink-600">OS</span></h1>
+            <p class="text-[9px] text-gray-600 tracking-[0.2em]">NEURAL OPS CENTER</p>
+        </div>
+        <nav class="flex-grow space-y-2">
+            <div class="sidebar-item active p-3 text-sm flex items-center" onclick="showView('market')">
+                <span class="mr-3 text-pink-500">◈</span> MARKET_PULSE
             </div>
-            <div class="text-right">
-                <div id="status" class="text-xs text-pink-600 mb-2">SYSTEM: ONLINE</div>
-                <button onclick="runScraper()" id="scrapeBtn" class="btn-action px-6 py-2 text-sm font-bold">
-                    INITIATE_SCRAPE()
-                </button>
+            <div class="sidebar-item p-3 text-sm flex items-center" onclick="showView('lab')">
+                <span class="mr-3 text-pink-500">⌬</span> THE_LAB
+            </div>
+            <div class="sidebar-item p-3 text-sm flex items-center" onclick="showView('army')">
+                <span class="mr-3 text-pink-500">☖</span> CHANNEL_ARMY
+            </div>
+            <div class="sidebar-item p-3 text-sm flex items-center" onclick="showView('pilot')">
+                <span class="mr-3 text-pink-500">⌆</span> AUTO_PILOT
+            </div>
+        </nav>
+        <div class="border-t border-gray-900 pt-6">
+            <button onclick="runScraper()" id="scrapeBtn" class="w-full border border-pink-600 text-pink-600 py-2 text-xs font-bold hover:bg-pink-600 hover:text-black transition-all">
+                INITIATE_SCRAPE()
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-grow flex flex-col overflow-hidden">
+        <!-- Header -->
+        <header class="h-16 border-b border-gray-900 flex items-center justify-between px-8 bg-black/50">
+            <div id="view-title" class="font-['Orbitron'] text-sm tracking-widest text-gray-400">MARKET_PULSE // REAL-TIME VELOCITY</div>
+            <div class="flex items-center space-x-6 text-[10px]">
+                <div class="flex items-center"><span class="w-2 h-2 bg-emerald-500 rounded-full mr-2 animate-pulse"></span> DB_LINK: ACTIVE</div>
+                <div class="flex items-center text-gray-500">LATENCY: <span id="latency">12ms</span></div>
             </div>
         </header>
 
-        <main class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <!-- System Logs -->
-            <div class="lg:col-span-1 neon-border p-4 bg-cyber h-[600px] flex flex-col">
-                <h2 class="text-lg mb-4 text-pink-600 border-b border-pink-900/30 pb-2">CORE_LOGS</h2>
-                <div id="logs" class="text-xs space-y-2 overflow-y-auto scroll-custom flex-grow font-light">
-                    <div class="text-gray-600">[00:00:00] Booting COPY OS...</div>
-                    <div class="text-gray-600">[00:00:01] Protocol loaded...</div>
-                </div>
+        <!-- Viewport -->
+        <div class="flex-grow overflow-y-auto p-8 scroll-custom bg-[#050505]" id="viewport">
+            <!-- Market Pulse Grid -->
+            <div id="market-view" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                <!-- Cards injected here -->
             </div>
 
-            <!-- Data Display -->
-            <div class="lg:col-span-2 neon-border p-4 bg-black/50 h-[600px] flex flex-col">
-                <h2 class="text-lg mb-4 text-emerald-400 border-b border-emerald-900/30 pb-2">EXTRACTED_DATA</h2>
-                <div id="data-list" class="overflow-y-auto scroll-custom flex-grow">
-                    <table class="w-full text-left text-sm">
-                        <thead class="text-gray-500 border-b border-gray-800">
-                            <tr>
-                                <th class="pb-2">TITLE</th>
-                                <th class="pb-2">VIEWS</th>
-                                <th class="pb-2">TIMESTAMP</th>
-                            </tr>
-                        </thead>
-                        <tbody id="videoTableBody">
-                            <!-- Data injected here -->
-                        </tbody>
-                    </table>
+            <!-- Lab View (Hidden by default) -->
+            <div id="lab-view" class="hidden h-full flex flex-col items-center justify-center text-gray-700">
+                <div class="text-4xl mb-4 text-pink-900/20">⌬</div>
+                <p class="text-sm italic">SELECT A TARGET FROM MARKET_PULSE TO BEGIN DECONSTRUCTION</p>
+            </div>
+        </div>
+
+        <!-- System Logs (Footer Drawer) -->
+        <footer class="h-32 border-t border-gray-900 bg-black p-4 font-['JetBrains_Mono'] text-[10px] overflow-hidden">
+            <div id="logs" class="space-y-1 h-full overflow-y-auto scroll-custom">
+                <div class="text-gray-700">-- SYSTEM READY --</div>
+            </div>
+        </footer>
+    </main>
+
+    <!-- Deconstruction Modal -->
+    <div id="decon-modal" class="modal fixed inset-0 z-50 p-12">
+        <div class="w-full h-full border border-pink-600/30 flex flex-col bg-black">
+            <div class="p-4 border-b border-pink-600/30 flex justify-between items-center bg-pink-600/10">
+                <span class="font-['Orbitron'] text-xs text-pink-600">DECONSTRUCTION_ENGINE v2.0</span>
+                <button onclick="closeModal()" class="text-pink-600 hover:text-white">✕ CLOSE</button>
+            </div>
+            <div class="flex-grow flex divide-x divide-gray-900 overflow-hidden">
+                <!-- Left: Original -->
+                <div class="w-1/2 p-6 overflow-y-auto scroll-custom space-y-6">
+                    <div id="modal-player" class="aspect-video bg-gray-900 flex items-center justify-center border border-gray-800">
+                        <span class="text-xs text-gray-700">[VIDEO_PREVIEW_PLACEHOLDER]</span>
+                    </div>
+                    <div>
+                        <h3 class="text-pink-600 text-[10px] mb-2 font-bold tracking-widest">RETENTION_MARKERS</h3>
+                        <div class="h-1 bg-gray-900 relative">
+                            <div class="absolute left-1/4 w-1 h-3 bg-red-500 -top-1"></div>
+                            <div class="absolute left-1/2 w-1 h-3 bg-red-500 -top-1"></div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-950 p-4 border-l-2 border-pink-600 text-xs text-gray-400 leading-relaxed italic" id="modal-transcript">
+                        "Loading neural transcript..."
+                    </div>
+                </div>
+                <!-- Right: The Twist -->
+                <div class="w-1/2 p-6 overflow-y-auto scroll-custom space-y-8 bg-emerald-500/5">
+                    <div>
+                        <h3 class="text-emerald-500 text-[10px] mb-4 font-bold tracking-widest">GEMINI_REWRITE</h3>
+                        <div class="bg-black border border-emerald-500/30 p-4 min-h-[200px] text-xs text-emerald-100/70" contenteditable="true" id="modal-rewrite">
+                            [AI is generating the twist...]
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="border border-emerald-500/20 p-4 bg-black">
+                            <h4 class="text-[9px] text-gray-500 mb-2">VISUAL_STRATEGY</h4>
+                            <p class="text-[10px] text-emerald-600">Use neon high-contrast overlays at 00:15</p>
+                        </div>
+                        <div class="border border-emerald-500/20 p-4 bg-black">
+                            <h4 class="text-[9px] text-gray-500 mb-2">THUMBNAIL_GEN</h4>
+                            <button class="w-full border border-emerald-500 text-emerald-500 py-2 text-[9px] hover:bg-emerald-500 hover:text-black transition-all">
+                                GEN_DRAFT()
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </main>
+        </div>
     </div>
 
     <script>
-        function addLog(msg) {
+        const socket = io();
+        
+        function addLog(msg, type = 'info') {
             const logs = document.getElementById('logs');
             const time = new Date().toLocaleTimeString();
-            logs.innerHTML += `<div class="text-emerald-500"><span class="text-gray-600">[${time}]</span> ${msg}</div>`;
+            let color = 'text-gray-600';
+            if(type === 'success') color = 'text-emerald-500';
+            if(type === 'error') color = 'text-pink-600';
+            logs.innerHTML += `<div class="${color}"><span class="text-gray-800">[${time}]</span> ${msg}</div>`;
             logs.scrollTop = logs.scrollHeight;
         }
+
+        socket.on('log', (data) => addLog(data.message, data.type));
+        socket.on('data-update', loadData);
 
         async function loadData() {
             try {
                 const res = await fetch('/api/videos');
                 const data = await res.json();
-                const tbody = document.getElementById('videoTableBody');
-                tbody.innerHTML = data.map(v => `
-                    <tr class="border-b border-gray-900 hover:bg-emerald-500/5">
-                        <td class="py-3 pr-4 text-emerald-100 font-medium">${v.title}</td>
-                        <td class="py-3 text-pink-500 font-mono">${v.views}</td>
-                        <td class="py-3 text-gray-600 text-xs">${new Date(v.scraped_at).toLocaleTimeString()}</td>
-                    </tr>
+                const grid = document.getElementById('market-view');
+                grid.innerHTML = data.map(v => `
+                    <div class="cyber-panel p-4 group cursor-pointer" onclick="openDecon('${v.title}', '${v.channel_name}')">
+                        <div class="relative aspect-video mb-4 overflow-hidden bg-gray-900">
+                            <img src="${v.thumbnail_url}" class="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity">
+                            <div class="absolute top-2 right-2 bg-black/80 px-2 py-1 text-[10px] flex items-center">
+                                <span class="velocity-fire mr-1">🔥</span> ${v.velocity}/hr
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="text-xs font-bold text-white truncate w-4/5">${v.title}</h3>
+                            <span class="text-[9px] text-pink-600 font-bold">${v.twist_score}% TWIST</span>
+                        </div>
+                        <div class="flex justify-between items-center text-[10px] text-gray-500 mb-4">
+                            <span>@${v.channel_name}</span>
+                            <span>${v.views}</span>
+                        </div>
+                        <div class="twist-meter">
+                            <div class="twist-fill" style="width: ${v.twist_score}%"></div>
+                        </div>
+                        <button class="mt-4 w-full border border-gray-800 py-1 text-[9px] hover:border-emerald-500 hover:text-emerald-500 transition-all">DECONSTRUCT()</button>
+                    </div>
                 `).join('');
             } catch (err) {
-                addLog('CRITICAL_ERROR: Failed to fetch data');
+                addLog('CRITICAL_ERROR: Failed to fetch neural pulse', 'error');
             }
         }
 
@@ -120,25 +184,40 @@
             const btn = document.getElementById('scrapeBtn');
             btn.disabled = true;
             btn.innerText = 'SCRAPING...';
-            addLog('SYSTEM: Initializing Puppeteer cluster...');
-            
             try {
-                const res = await fetch('/api/scrape', { method: 'POST' });
-                const result = await res.json();
-                addLog(`SUCCESS: ${result.count} data points synchronized.`);
-                loadData();
-            } catch (err) {
-                addLog('ERROR: Data extraction failed.');
+                await fetch('/api/scrape', { method: 'POST' });
             } finally {
                 btn.disabled = false;
                 btn.innerText = 'INITIATE_SCRAPE()';
             }
         }
 
-        // Initial Load
-        addLog('SYSTEM: Terminal Ready.');
+        function openDecon(title, channel) {
+            document.getElementById('decon-modal').style.display = 'block';
+            document.getElementById('modal-transcript').innerText = `AI Analysis for "${title}" by ${channel}... Identifying hooks and viral patterns.`;
+            document.getElementById('modal-rewrite').innerText = `HOOK: Start with "I found the dark secret of ${channel}..." \n\nCONTENT: Apply the neon-cyber twist to the middle section...`;
+        }
+
+        function closeModal() {
+            document.getElementById('decon-modal').style.display = 'none';
+        }
+
+        function showView(view) {
+            document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
+            document.getElementById('market-view').classList.add('hidden');
+            document.getElementById('lab-view').classList.add('hidden');
+            
+            if(view === 'market') {
+                document.getElementById('market-view').classList.remove('hidden');
+                document.getElementById('view-title').innerText = 'MARKET_PULSE // REAL-TIME VELOCITY';
+            } else {
+                document.getElementById('lab-view').classList.remove('hidden');
+                document.getElementById('view-title').innerText = view.toUpperCase() + ' // RESTRICTED_ACCESS';
+            }
+            event.currentTarget.classList.add('active');
+        }
+
         loadData();
-        setInterval(loadData, 5000); // Polling for updates
     </script>
 </body>
 </html>

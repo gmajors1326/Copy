@@ -14,20 +14,32 @@ async function scrapeTrending() {
 
     const videos = await page.evaluate(() => {
       const videoElements = document.querySelectorAll('ytd-video-renderer');
-      return Array.from(videoElements).slice(0, 10).map(v => {
+      return Array.from(videoElements).slice(0, 12).map(v => {
         const title = v.querySelector('#video-title').innerText;
+        const videoUrl = v.querySelector('#video-title').href;
+        const channelName = v.querySelector('#channel-info').innerText.split('\n')[0];
+        const thumbnailUrl = v.querySelector('img').src;
         const metadata = v.querySelector('#metadata-line').innerText.split('\n');
-        const views = metadata[0] || 'Unknown views';
-        return { title, views };
+        const viewsStr = metadata[0] || '0 views';
+        
+        // Parse views to integer for velocity calculation
+        const viewCount = parseInt(viewsStr.replace(/[^0-9]/g, '')) * (viewsStr.includes('K') ? 1000 : viewsStr.includes('M') ? 1000000 : 1);
+        
+        return { title, videoUrl, channelName, thumbnailUrl, views: viewsStr, viewCount };
       });
     });
 
-    console.log(`Found ${videos.length} videos. Saving to database...`);
+    console.log(`Found ${videos.length} videos. Syncing with Neural Link...`);
 
     for (const video of videos) {
+      // Logic to calculate velocity could go here (comparing with last known count)
+      const velocity = Math.floor(Math.random() * 5000); // Placeholder velocity
+      const twistScore = Math.floor(Math.random() * 100);
+
       await db.query(
-        'INSERT INTO trending_videos (title, views) VALUES ($1, $2)',
-        [video.title, video.views]
+        `INSERT INTO trending_videos (title, video_url, channel_name, thumbnail_url, views, view_count, velocity, twist_score) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [video.title, video.videoUrl, video.channelName, video.thumbnailUrl, video.views, video.viewCount, velocity, twistScore]
       );
     }
 

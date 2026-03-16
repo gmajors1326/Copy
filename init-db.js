@@ -6,7 +6,14 @@ async function init() {
       CREATE TABLE IF NOT EXISTS trending_videos (
         id SERIAL PRIMARY KEY,
         title TEXT NOT NULL,
+        channel_name TEXT,
+        thumbnail_url TEXT,
+        video_url TEXT,
         views TEXT,
+        view_count INTEGER,
+        velocity INTEGER DEFAULT 0,
+        category TEXT DEFAULT 'Market Pulse',
+        twist_score INTEGER DEFAULT 0,
         scraped_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
