@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>COPY // AI OPS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=JetBrains+Mono:wght@300;500&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #050505;
+            color: #00ff9f;
+            font-family: 'JetBrains+Mono', monospace;
+            overflow-x: hidden;
+        }
+        h1, h2, .brand {
+            font-family: 'Orbitron', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+        }
+        .neon-border {
+            border: 1px solid #00ff9f;
+            box-shadow: 0 0 10px rgba(0, 255, 159, 0.3), inset 0 0 5px rgba(0, 255, 159, 0.2);
+        }
+        .neon-text {
+            text-shadow: 0 0 10px rgba(0, 255, 159, 0.5);
+        }
+        .bg-cyber {
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+            border-left: 4px solid #ff0055;
+        }
+        .btn-action {
+            background: transparent;
+            border: 1px solid #ff0055;
+            color: #ff0055;
+            transition: all 0.3s;
+        }
+        .btn-action:hover {
+            background: #ff0055;
+            color: #000;
+            box-shadow: 0 0 20px #ff0055;
+        }
+        .scroll-custom::-webkit-scrollbar { width: 4px; }
+        .scroll-custom::-webkit-scrollbar-track { background: #0a0a0a; }
+        .scroll-custom::-webkit-scrollbar-thumb { background: #ff0055; }
+    </style>
+</head>
+<body class="p-8">
+    <div class="max-w-6xl mx-auto">
+        <header class="flex justify-between items-center mb-12 border-b border-gray-800 pb-6">
+            <div>
+                <h1 class="text-4xl font-bold neon-text">COPY <span class="text-xs align-top text-pink-600">v1.0</span></h1>
+                <p class="text-gray-500 text-sm mt-2 uppercase tracking-widest">Neural Link Established // AI Operations Dashboard</p>
+            </div>
+            <div class="text-right">
+                <div id="status" class="text-xs text-pink-600 mb-2">SYSTEM: ONLINE</div>
+                <button onclick="runScraper()" id="scrapeBtn" class="btn-action px-6 py-2 text-sm font-bold">
+                    INITIATE_SCRAPE()
+                </button>
+            </div>
+        </header>
+
+        <main class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- System Logs -->
+            <div class="lg:col-span-1 neon-border p-4 bg-cyber h-[600px] flex flex-col">
+                <h2 class="text-lg mb-4 text-pink-600 border-b border-pink-900/30 pb-2">CORE_LOGS</h2>
+                <div id="logs" class="text-xs space-y-2 overflow-y-auto scroll-custom flex-grow font-light">
+                    <div class="text-gray-600">[00:00:00] Booting COPY OS...</div>
+                    <div class="text-gray-600">[00:00:01] Protocol loaded...</div>
+                </div>
+            </div>
+
+            <!-- Data Display -->
+            <div class="lg:col-span-2 neon-border p-4 bg-black/50 h-[600px] flex flex-col">
+                <h2 class="text-lg mb-4 text-emerald-400 border-b border-emerald-900/30 pb-2">EXTRACTED_DATA</h2>
+                <div id="data-list" class="overflow-y-auto scroll-custom flex-grow">
+                    <table class="w-full text-left text-sm">
+                        <thead class="text-gray-500 border-b border-gray-800">
+                            <tr>
+                                <th class="pb-2">TITLE</th>
+                                <th class="pb-2">VIEWS</th>
+                                <th class="pb-2">TIMESTAMP</th>
+                            </tr>
+                        </thead>
+                        <tbody id="videoTableBody">
+                            <!-- Data injected here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function addLog(msg) {
+            const logs = document.getElementById('logs');
+            const time = new Date().toLocaleTimeString();
+            logs.innerHTML += `<div class="text-emerald-500"><span class="text-gray-600">[${time}]</span> ${msg}</div>`;
+            logs.scrollTop = logs.scrollHeight;
+        }
+
+        async function loadData() {
+            try {
+                const res = await fetch('/api/videos');
+                const data = await res.json();
+                const tbody = document.getElementById('videoTableBody');
+                tbody.innerHTML = data.map(v => `
+                    <tr class="border-b border-gray-900 hover:bg-emerald-500/5">
+                        <td class="py-3 pr-4 text-emerald-100 font-medium">${v.title}</td>
+                        <td class="py-3 text-pink-500 font-mono">${v.views}</td>
+                        <td class="py-3 text-gray-600 text-xs">${new Date(v.scraped_at).toLocaleTimeString()}</td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                addLog('CRITICAL_ERROR: Failed to fetch data');
+            }
+        }
+
+        async function runScraper() {
+            const btn = document.getElementById('scrapeBtn');
+            btn.disabled = true;
+            btn.innerText = 'SCRAPING...';
+            addLog('SYSTEM: Initializing Puppeteer cluster...');
+            
+            try {
+                const res = await fetch('/api/scrape', { method: 'POST' });
+                const result = await res.json();
+                addLog(`SUCCESS: ${result.count} data points synchronized.`);
+                loadData();
+            } catch (err) {
+                addLog('ERROR: Data extraction failed.');
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'INITIATE_SCRAPE()';
+            }
+        }
+
+        // Initial Load
+        addLog('SYSTEM: Terminal Ready.');
+        loadData();
+        setInterval(loadData, 5000); // Polling for updates
+    </script>
+</body>
+</html>
